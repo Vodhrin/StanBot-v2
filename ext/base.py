@@ -11,6 +11,21 @@ class Base(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(
+        description="Command Stan to kill himself.",
+        dm_permission=True
+    )
+    async def restart(self,
+                      inter:disnake.ApplicationCommandInteraction
+                      ):
+
+        if not utils.is_admin(inter.author):
+            await inter.send("Ballsack denied.")
+            return
+
+        await inter.send("Restarting...")
+        exit()
+
+    @commands.slash_command(
         description="Ask Stan to imbue text with sussiness.",
         dm_permission=True
     )

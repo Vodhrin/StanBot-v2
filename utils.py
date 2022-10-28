@@ -1,7 +1,7 @@
 import disnake
 import random
-import io
 from bot import StanBot
+from config import ADMIN_IDS
 from typing import Optional
 from datetime import datetime
 
@@ -10,15 +10,19 @@ async def relay_error(bot: StanBot,
                       ex: Exception,
                       message: Optional[disnake.Message] = None):
 
-    owner_id = 188421688453627904
     text = f"I farded with {repr(ex)} at {datetime.today().strftime('%I:%M %p')}"
     if message:
         text += f" in channel:{message.channel.name}."
     else:
         text += "."
 
-    owner = await bot.fetch_user(owner_id)
+    owner = await bot.fetch_user(ADMIN_IDS[0])
     await owner.send(text)
+
+
+def is_admin(user: disnake.User):
+
+    return user.id in ADMIN_IDS
 
 
 def random_chance(percent: float) -> bool:
