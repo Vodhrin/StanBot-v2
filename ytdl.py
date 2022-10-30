@@ -1,10 +1,9 @@
-import youtube_dl
+import yt_dlp
 import asyncio
-import io
 from dataclasses import dataclass
 from enum import Enum
 
-youtube_dl.utils.bug_reports_message = lambda: ''
+yt_dlp.utils.bug_reports_message = lambda: ''
 
 ytdl_format_options_audio = {
     'format': 'bestaudio/best',
@@ -36,8 +35,8 @@ ytdl_format_options_video = {
 }
 
 
-ytdl_audio = youtube_dl.YoutubeDL(ytdl_format_options_audio)
-ytdl_video = youtube_dl.YoutubeDL(ytdl_format_options_video)
+ytdl_audio = yt_dlp.YoutubeDL(ytdl_format_options_audio)
+ytdl_video = yt_dlp.YoutubeDL(ytdl_format_options_video)
 
 
 class MediaType(Enum):

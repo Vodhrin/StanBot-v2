@@ -1,4 +1,4 @@
 aiohttp==3.8.1
 disnake==2.5.2
 spacy==3.4.1
-youtube_dl==2021.12.17
+yt_dlp==2022.10.4
