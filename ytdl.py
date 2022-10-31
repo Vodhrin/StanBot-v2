@@ -80,7 +80,6 @@ async def extract_media_info(url: str, media_type: MediaType) -> [MediaInfo]:
                      data["url"],
                      data["ext"],
                      MediaType.Audio if "audio only" in data["format"] else MediaType.Video)
-    print(info.media_url)
     infos.append(info)
     return infos
 
