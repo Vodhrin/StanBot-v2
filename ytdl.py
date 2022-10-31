@@ -11,11 +11,9 @@ ytdl_format_options_audio = {
     'restrictfilenames': True,
     'noplaylist': True,
     'nocheckcertificate': True,
-    'nocachedirs': True,
     'ignoreerrors': False,
     'logtostderr': False,
     'quiet': True,
-    'verbose': True,
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
@@ -27,11 +25,9 @@ ytdl_format_options_video = {
     'restrictfilenames': True,
     'noplaylist': True,
     'nocheckcertificate': True,
-    'nocachedirs': True,
     'ignoreerrors': False,
     'logtostderr': False,
     'quiet': True,
-    'verbose': True,
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
