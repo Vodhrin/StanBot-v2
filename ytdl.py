@@ -18,8 +18,7 @@ ytdl_format_options_audio = {
     'default_search': 'auto',
     'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
     'cookiefile': 'cookies.txt',
-    'cachedir': False,
-    'useragent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'
+    'cachedir': False
 }
 ytdl_format_options_video = {
     'format': 'best',
@@ -34,8 +33,7 @@ ytdl_format_options_video = {
     'default_search': 'auto',
     'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
     'cookiefile': 'cookies.txt',
-    'cachedir': False,
-    'useragent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'
+    'cachedir': False
 }
 
 
