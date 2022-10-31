@@ -17,7 +17,8 @@ ytdl_format_options_audio = {
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
-    'cookiefile': 'cookies.txt'
+    'cookiefile': 'cookies.txt',
+    'cachedir': False
 }
 ytdl_format_options_video = {
     'format': 'best',
@@ -31,7 +32,8 @@ ytdl_format_options_video = {
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
-    'cookiefile': 'cookies.txt'
+    'cookiefile': 'cookies.txt',
+    'cachedir': False
 }
 
 
@@ -78,6 +80,7 @@ async def extract_media_info(url: str, media_type: MediaType) -> [MediaInfo]:
                      data["url"],
                      data["ext"],
                      MediaType.Audio if "audio only" in data["format"] else MediaType.Video)
+    print(info.media_url)
     infos.append(info)
     return infos
 
