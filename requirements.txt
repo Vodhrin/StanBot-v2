@@ -1,4 +1,4 @@
 aiohttp==3.8.1
 disnake==2.5.2
 spacy==3.4.1
-yt_dlp==2022.10.4
+yt_dlp==2023.1.2
