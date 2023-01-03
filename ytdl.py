@@ -16,7 +16,6 @@ ytdl_format_options_audio = {
     'verbose': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
     'cookiefile': 'cookies.txt',
     'cachedir': False
 }
@@ -31,7 +30,6 @@ ytdl_format_options_video = {
     'verbose': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
     'cookiefile': 'cookies.txt',
     'cachedir': False
 }
