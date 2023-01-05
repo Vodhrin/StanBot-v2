@@ -4,6 +4,7 @@ import ytdl
 from disnake.ext import commands
 from typing import Optional
 from queue import Queue
+from datetime import datetime
 
 
 class StanVoiceClient(disnake.VoiceClient):
@@ -14,9 +15,10 @@ class StanVoiceClient(disnake.VoiceClient):
         self._queue: Queue[ytdl.MediaInfo] = Queue()
         self._current_info: Optional[ytdl.MediaInfo] = None
         self._looping: bool = False
+        self._embed_message: Optional[disnake.Message] = None
         self._announce_channel: Optional[disnake.TextChannel] = None
 
-    async def enqueue(self, url: str, inter: disnake.ApplicationCommandInteraction):
+    async def enqueue(self, url: str, inter: disnake.ApplicationCommandInteraction) -> None:
 
         self._announce_channel = inter.channel
 
@@ -27,24 +29,14 @@ class StanVoiceClient(disnake.VoiceClient):
         for info in infos:
             self._queue.put(info)
 
-        if self.is_playing():
-            if len(infos) == 1:
-                await inter.send(f"Queued {infos[0].title}")
-            else:
-                m = "Queued playlist items:\n"
-                for info in infos:
-                    m += info.title + "\n"
-                await inter.send(m)
+        if not self.is_playing():
+            await self.play_next()
         else:
-            await self.play_next(inter)
+            await self.update_embed()
 
-            if len(infos) > 1:
-                m = "Queued playlist items:\n"
-                for info in infos[1:]:
-                    m += info.title + "\n"
-                await inter.channel.send(m)
+        await inter.delete_original_message()
 
-    async def play_next(self, inter: Optional[disnake.ApplicationCommandInteraction] = None):
+    async def play_next(self) -> None:
 
         self.stop()
 
@@ -53,40 +45,96 @@ class StanVoiceClient(disnake.VoiceClient):
 
         source = disnake.FFmpegPCMAudio(info.media_url, **get_ffmpeg_options())
         self.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(self.on_end(), self.client.loop))
-        if inter:
-            await inter.send(f"Playing {info.title}...")
-        elif self._announce_channel:
-            await self._announce_channel.send(f"Playing queued {info.title}...")
 
-    async def on_end(self):
+        await self.send_or_update_embed()
+
+    async def on_end(self) -> None:
 
         if self._queue.empty():
             if self._looping and self._current_info:
                 self._queue.put(self._current_info)
                 await self.play_next()
             else:
-                await self.disconnect(force=True)
-                if self._announce_channel:
-                    await self._announce_channel.send("Returning to Troll HQ...")
+                await self.clear()
+                await self.disconnect()
         else:
+            if self._looping and self._current_info:
+                self._queue.put(self._current_info)
             await self.play_next()
 
-    async def skip(self, inter: Optional[disnake.ApplicationCommandInteraction] = None):
-
-        if inter:
-            if self._current_info:
-                await inter.send(f"Skipping {self._current_info.title}...")
-            else:
-                await inter.send("Skipping on your mom's titties...")
+    async def skip(self, inter: Optional[disnake.ApplicationCommandInteraction] = None) -> None:
 
         self.stop()
+        await self.update_embed()
+        await inter.send(f"Skipping {self._current_info.title}...", delete_after=10)
 
-    async def toggle_looping(self, inter: Optional[disnake.ApplicationCommandInteraction] = None):
+    async def toggle_looping(self, inter: Optional[disnake.ApplicationCommandInteraction] = None) -> None:
 
         self._looping = not self._looping
+        await self.update_embed()
+        text = "enabled" if self._looping else "disabled"
+        await inter.send(f"Looping {text}...", delete_after=10)
 
-        if inter:
-            await inter.send(f"Looping {'enabled' if self._looping else 'disabled'}...")
+    async def generate_embed(self) -> disnake.Embed:
+
+        embed = disnake.Embed(
+            title="Stan's Jukebox",
+            color=0x8c041f,
+            timestamp=datetime.now()
+        )
+
+        if self._current_info is not None:
+            embed.add_field("Currently Playing", self._current_info.title, inline=False)
+        else:
+            embed.add_field("Currently Playing:", "None", inline=False)
+
+        count = 0
+        field_content = ""
+        l: list[ytdl.MediaInfo] = list(self._queue.queue)
+        if len(l) > 0:
+            for idx, i in enumerate(l):
+                field_content += f"{idx + 1}. {i.title}\n"
+        else:
+            field_content = "No Queue"
+
+        embed.add_field("Queue:", field_content, inline=False)
+
+        embed.set_footer(text=f"Currently looping:  {self._looping}")
+
+        return embed
+
+    async def send_or_update_embed(self) -> None:
+
+        if self._embed_message is None:
+            await self.send_embed()
+            return
+
+        if self._embed_message.channel is not self._announce_channel:
+            await self._embed_message.delete()
+            await self.send_embed()
+            return
+
+        await self.update_embed()
+
+    async def update_embed(self) -> None:
+
+        if self._embed_message is None:
+            return
+
+        new_embed = await self.generate_embed()
+        await self._embed_message.edit(embeds=[new_embed])
+
+    async def send_embed(self) -> None:
+
+        if self._announce_channel is None:
+            return
+
+        embed = await self.generate_embed()
+        self._embed_message = await self._announce_channel.send(embeds=[embed])
+
+    async def clear(self) -> None:
+
+        await self._embed_message.delete()
 
 
 def is_connected_to_voice(member: disnake.Member) -> bool:
