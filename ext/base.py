@@ -1,9 +1,8 @@
 import disnake
-import lang
 import utils
-import io
 from disnake.ext import commands
 from bot import StanBot
+from language import tags
 
 
 class Base(commands.Cog):
@@ -37,7 +36,7 @@ class Base(commands.Cog):
         await inter.response.defer()
 
         try:
-            result = lang.replace_words_by_tag_random(text).replace("  ", "\n")
+            result = tags.replace_words_by_tag_random(text).replace("  ", "\n")
             if len(result) < 2001:
                 await inter.send(result)
             else:

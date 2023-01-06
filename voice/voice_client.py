@@ -1,10 +1,12 @@
 import disnake
 import asyncio
-import ytdl
-from disnake.ext import commands
-from typing import Optional
-from queue import Queue
 from datetime import datetime
+from queue import Queue
+from typing import Optional
+
+from voice.song import Song
+from voice.ytdl import extract_media_info, get_ffmpeg_options
+from voice.media_info import MediaInfo, MediaType
 
 
 class StanVoiceClient(disnake.VoiceClient):
@@ -12,8 +14,8 @@ class StanVoiceClient(disnake.VoiceClient):
     def __init__(self, client: disnake.Client, channel: disnake.abc.Connectable):
 
         super().__init__(client, channel)
-        self._queue: Queue[ytdl.MediaInfo] = Queue()
-        self._current_info: Optional[ytdl.MediaInfo] = None
+        self._queue: Queue[Song] = Queue()
+        self._current_song: Optional[Song] = None
         self._looping: bool = False
         self._embed_message: Optional[disnake.Message] = None
         self._announce_channel: Optional[disnake.TextChannel] = None
@@ -26,10 +28,11 @@ class StanVoiceClient(disnake.VoiceClient):
 
         await inter.response.defer()
 
-        infos = await ytdl.extract_media_info(url, ytdl.MediaType.Audio)
+        infos = await extract_media_info(url, MediaType.Audio)
 
         for info in infos:
-            self._queue.put(info)
+            new_song = Song(info, inter.author)
+            self._queue.put(new_song)
 
         if not self.is_playing():
             await self.play_next()
@@ -42,10 +45,10 @@ class StanVoiceClient(disnake.VoiceClient):
 
         self.stop()
 
-        info = self._queue.get(block=False)
-        self._current_info = info
+        next_song = self._queue.get(block=False)
+        self._current_song = next_song
 
-        source = disnake.FFmpegPCMAudio(info.media_url, **get_ffmpeg_options())
+        source = disnake.FFmpegPCMAudio(next_song.media_info.media_url, **get_ffmpeg_options())
         self.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(self.on_end(), self.client.loop))
 
         await self.send_or_update_embed()
@@ -53,23 +56,23 @@ class StanVoiceClient(disnake.VoiceClient):
     async def on_end(self) -> None:
 
         if self._queue.empty():
-            if self._looping and self._current_info:
-                self._queue.put(self._current_info)
+            if self._looping and self._current_song:
+                self._queue.put(self._current_song)
                 await self.play_next()
             else:
                 await self.clear()
                 await self.disconnect()
         else:
-            if self._looping and self._current_info:
-                self._queue.put(self._current_info)
+            if self._looping and self._current_song:
+                self._queue.put(self._current_song)
             await self.play_next()
 
     async def skip(self, inter: Optional[disnake.ApplicationCommandInteraction] = None, no_loop: bool = False) -> None:
 
-        await inter.send(f"Skipping {self._current_info.title}{' and ignoring looping' if no_loop else ''}...",
+        await inter.send(f"Skipping {self._current_song.name}{' and ignoring looping' if no_loop else ''}...",
                          delete_after=10)
         if no_loop:
-            self._current_info = None
+            self._current_song = None
         self.stop()
         await self.update_embed()
 
@@ -92,21 +95,33 @@ class StanVoiceClient(disnake.VoiceClient):
             embed.set_author(name=self._last_member.nick or self._last_member.name,
                              icon_url=self._last_member.avatar.url)
 
-        if self._current_info is not None:
-            embed.add_field("Currently Playing", self._current_info.title, inline=False)
-        else:
-            embed.add_field("Currently Playing:", "None", inline=False)
+        current = self._current_song
 
+        if current is not None and current.media_info.thumbnail is not None:
+            embed.set_thumbnail(current.media_info.thumbnail)
+
+        songs_field = f":arrow_forward: {current.name[:30] + '...' if len(current.name) > 30 else current.name}\n" \
+            if current else ""
+        requesters_field = f"{current.owner.nick or current.owner.name}\n" \
+            if current else ""
+        links_field = f"[{current.media_info.extractor}]({current.media_info.page_url})\n" \
+            if current else ""
+
+        l: list[Song] = list(self._queue.queue)
         count = 0
-        field_content = ""
-        l: list[ytdl.MediaInfo] = list(self._queue.queue)
         if len(l) > 0:
             for idx, i in enumerate(l):
-                field_content += f"{idx + 1}. {i.title}\n"
-        else:
-            field_content = "No Queue"
+                if count == 25:
+                    break
+                songs_field += f"{idx + 1}. {i.name[:30] + '...' if len(i.name) > 30 else i.name}\n"
+                requesters_field += f"{i.owner.nick or i.owner.name}\n"
+                links_field += f"[{i.media_info.extractor}]({i.media_info.page_url})\n"
 
-        embed.add_field("Queue:", field_content, inline=False)
+                count += 1
+
+        embed.add_field("Queue", songs_field)
+        embed.add_field("Requester", requesters_field)
+        embed.add_field("Source", links_field)
 
         embed.set_footer(text=f"Currently looping:  {self._looping}")
 
@@ -144,46 +159,3 @@ class StanVoiceClient(disnake.VoiceClient):
     async def clear(self) -> None:
 
         await self._embed_message.delete()
-
-
-def is_connected_to_voice(member: disnake.Member) -> bool:
-    return member.voice is not None and member.voice.channel is not None
-
-
-def try_get_voice_channel(member: disnake.Member) -> Optional[disnake.VoiceChannel]:
-    if not is_connected_to_voice(member):
-        return None
-
-    return member.voice.channel
-
-
-def try_get_voice_client(bot: commands.Bot, channel: disnake.VoiceChannel) -> Optional[StanVoiceClient]:
-    vc: StanVoiceClient | disnake.VoiceProtocol = disnake.utils.get(bot.voice_clients, channel=channel)
-
-    return vc
-
-
-async def ensure_in_channel(bot: commands.Bot, channel: disnake.VoiceChannel) -> StanVoiceClient:
-    vc = try_get_voice_client(bot, channel)
-    if vc is None:
-        vc = await channel.connect(reconnect=False, cls=StanVoiceClient)
-    elif vc.channel is not channel:
-        await vc.move_to(channel)
-
-    return vc
-
-
-def get_ffmpeg_options(speed: float = 1) -> dict[str, str]:
-    speed = round(speed, 2)
-
-    if speed < 0.01:
-        speed = 0.01
-    elif speed > 10:
-        speed = 10
-
-    ffmpeg_options = {
-        'options': f'-vn  -filter:a "atempo={speed},atempo={speed}"',
-        "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
-    }
-
-    return ffmpeg_options

@@ -8,7 +8,7 @@ nlp = spacy.load("en_core_web_lg")
 
 words = {}
 
-directory = "words"
+directory = "language/words"
 for filename in os.listdir(directory):
     file_path = os.path.join(directory, filename)
 

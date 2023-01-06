@@ -1,5 +1,7 @@
 import disnake
-import ytdl
+
+import voice.media_info
+from voice import ytdl
 import aiohttp
 import io
 from disnake.ext import commands
@@ -18,7 +20,7 @@ class Utility(commands.Cog):
     async def rip(self,
                   inter: disnake.ApplicationCommandInteraction,
                   url: str = commands.Param(description="The url to rip from."),
-                  media_type: ytdl.MediaType = commands.Param(description="Type of media to rip.")
+                  media_type: voice.media_info.MediaType = commands.Param(description="Type of media to rip.")
                   ):
 
         await inter.response.defer()

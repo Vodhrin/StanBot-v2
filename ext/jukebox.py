@@ -1,8 +1,9 @@
 import disnake
-import voice
 import utils
 from disnake.ext import commands
 from bot import StanBot
+
+import voice.helpers
 
 
 class Radio(commands.Cog):
@@ -18,12 +19,12 @@ class Radio(commands.Cog):
                    url: str = commands.Param(description="The url to play.")
                    ) -> None:
 
-        channel = voice.try_get_voice_channel(inter.author)
+        channel = voice.helpers.try_get_voice_channel(inter.author)
         if channel is None:
             await inter.send("Where, retard?", delete_after=10)
             return
 
-        vc = await voice.ensure_in_channel(self.bot, channel)
+        vc = await voice.helpers.ensure_in_channel(self.bot, channel)
 
         try:
             await vc.enqueue(url, inter)
@@ -42,12 +43,12 @@ class Radio(commands.Cog):
                        default=False)
                    ):
 
-        channel = voice.try_get_voice_channel(inter.guild.me)
+        channel = voice.helpers.try_get_voice_channel(inter.guild.me)
         if channel is None:
             await inter.send("Retard", delete_after=10)
             return
 
-        vc = voice.try_get_voice_client(self.bot, channel)
+        vc = voice.helpers.try_get_voice_client(self.bot, channel)
         if vc:
             await vc.skip(inter, no_loop)
         else:
@@ -61,12 +62,12 @@ class Radio(commands.Cog):
                          inter: disnake.ApplicationCommandInteraction
                          ) -> None:
 
-        channel = voice.try_get_voice_channel(inter.author)
+        channel = voice.helpers.try_get_voice_channel(inter.author)
         if channel is None:
             await inter.send("Retard.", delete_after=10)
             return
 
-        vc = voice.try_get_voice_client(self.bot, channel)
+        vc = voice.helpers.try_get_voice_client(self.bot, channel)
 
         if vc is not None:
             await vc.clear()
@@ -83,12 +84,12 @@ class Radio(commands.Cog):
                    inter: disnake.ApplicationCommandInteraction
                    ):
 
-        channel = voice.try_get_voice_channel(inter.guild.me)
+        channel = voice.helpers.try_get_voice_channel(inter.guild.me)
         if channel is None:
             await inter.send("Retard", delete_after=10)
             return
 
-        vc = voice.try_get_voice_client(self.bot, channel)
+        vc = voice.helpers.try_get_voice_client(self.bot, channel)
         if vc:
             await vc.toggle_looping(inter)
         else:

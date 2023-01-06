@@ -1,7 +1,7 @@
 import yt_dlp
 import asyncio
-from dataclasses import dataclass
-from enum import Enum
+
+from voice.media_info import MediaInfo, MediaType
 
 yt_dlp.utils.bug_reports_message = lambda: ''
 
@@ -39,20 +39,6 @@ ytdl_audio = yt_dlp.YoutubeDL(ytdl_format_options_audio)
 ytdl_video = yt_dlp.YoutubeDL(ytdl_format_options_video)
 
 
-class MediaType(Enum):
-    Audio = 0
-    Video = 1
-
-
-@dataclass
-class MediaInfo:
-    title: str
-    page_url: str
-    media_url: str
-    extension: str
-    media_type: MediaType
-
-
 async def extract_media_info(url: str, media_type: MediaType) -> [MediaInfo]:
 
     loop = asyncio.get_event_loop()
@@ -69,6 +55,8 @@ async def extract_media_info(url: str, media_type: MediaType) -> [MediaInfo]:
                              entry["webpage_url"],
                              entry["url"],
                              entry["ext"],
+                             entry["extractor"],
+                             entry["thumbnail"] if "thumbnail" in entry else None,
                              MediaType.Audio if "audio only" in entry["format"] else MediaType.Video)
             infos.append(info)
         return infos
@@ -77,9 +65,27 @@ async def extract_media_info(url: str, media_type: MediaType) -> [MediaInfo]:
                      data["webpage_url"],
                      data["url"],
                      data["ext"],
+                     data["extractor"],
+                     data["thumbnail"] if "thumbnail" in data else None,
                      MediaType.Audio if "audio only" in data["format"] else MediaType.Video)
     infos.append(info)
     return infos
+
+
+def get_ffmpeg_options(speed: float = 1) -> dict[str, str]:
+    speed = round(speed, 2)
+
+    if speed < 0.01:
+        speed = 0.01
+    elif speed > 10:
+        speed = 10
+
+    ffmpeg_options = {
+        'options': f'-vn  -filter:a "atempo={speed},atempo={speed}"',
+        "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+    }
+
+    return ffmpeg_options
 
 
 # async def download_media(url: str, media_type: MediaType) -> io.BytesIO:
