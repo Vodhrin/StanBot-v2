@@ -36,7 +36,10 @@ class Radio(commands.Cog):
         dm_permission=False
     )
     async def skip(self,
-                   inter: disnake.ApplicationCommandInteraction
+                   inter: disnake.ApplicationCommandInteraction,
+                   no_loop: bool = commands.Param(
+                       description="If true, this will prevent the skipped song from being looped.",
+                       default=False)
                    ):
 
         channel = voice.try_get_voice_channel(inter.guild.me)
@@ -46,7 +49,7 @@ class Radio(commands.Cog):
 
         vc = voice.try_get_voice_client(self.bot, channel)
         if vc:
-            await vc.skip(inter)
+            await vc.skip(inter, no_loop)
         else:
             await inter.send("Retard.", delete_after=10)
 

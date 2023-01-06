@@ -17,10 +17,12 @@ class StanVoiceClient(disnake.VoiceClient):
         self._looping: bool = False
         self._embed_message: Optional[disnake.Message] = None
         self._announce_channel: Optional[disnake.TextChannel] = None
+        self._last_member: Optional[disnake.Member] = None
 
     async def enqueue(self, url: str, inter: disnake.ApplicationCommandInteraction) -> None:
 
         self._announce_channel = inter.channel
+        self._last_member = inter.author
 
         await inter.response.defer()
 
@@ -62,11 +64,14 @@ class StanVoiceClient(disnake.VoiceClient):
                 self._queue.put(self._current_info)
             await self.play_next()
 
-    async def skip(self, inter: Optional[disnake.ApplicationCommandInteraction] = None) -> None:
+    async def skip(self, inter: Optional[disnake.ApplicationCommandInteraction] = None, no_loop: bool = False) -> None:
 
+        await inter.send(f"Skipping {self._current_info.title}{' and ignoring looping' if no_loop else ''}...",
+                         delete_after=10)
+        if no_loop:
+            self._current_info = None
         self.stop()
         await self.update_embed()
-        await inter.send(f"Skipping {self._current_info.title}...", delete_after=10)
 
     async def toggle_looping(self, inter: Optional[disnake.ApplicationCommandInteraction] = None) -> None:
 
@@ -78,10 +83,14 @@ class StanVoiceClient(disnake.VoiceClient):
     async def generate_embed(self) -> disnake.Embed:
 
         embed = disnake.Embed(
-            title="Stan's Jukebox",
+            title="Echoes of the Void",
             color=0x8c041f,
             timestamp=datetime.now()
         )
+
+        if self._last_member is not None:
+            embed.set_author(name=self._last_member.nick or self._last_member.name,
+                             icon_url=self._last_member.avatar.url)
 
         if self._current_info is not None:
             embed.add_field("Currently Playing", self._current_info.title, inline=False)
@@ -138,12 +147,10 @@ class StanVoiceClient(disnake.VoiceClient):
 
 
 def is_connected_to_voice(member: disnake.Member) -> bool:
-
     return member.voice is not None and member.voice.channel is not None
 
 
 def try_get_voice_channel(member: disnake.Member) -> Optional[disnake.VoiceChannel]:
-
     if not is_connected_to_voice(member):
         return None
 
@@ -151,14 +158,12 @@ def try_get_voice_channel(member: disnake.Member) -> Optional[disnake.VoiceChann
 
 
 def try_get_voice_client(bot: commands.Bot, channel: disnake.VoiceChannel) -> Optional[StanVoiceClient]:
-
     vc: StanVoiceClient | disnake.VoiceProtocol = disnake.utils.get(bot.voice_clients, channel=channel)
 
     return vc
 
 
 async def ensure_in_channel(bot: commands.Bot, channel: disnake.VoiceChannel) -> StanVoiceClient:
-
     vc = try_get_voice_client(bot, channel)
     if vc is None:
         vc = await channel.connect(reconnect=False, cls=StanVoiceClient)
@@ -169,7 +174,6 @@ async def ensure_in_channel(bot: commands.Bot, channel: disnake.VoiceChannel) ->
 
 
 def get_ffmpeg_options(speed: float = 1) -> dict[str, str]:
-
     speed = round(speed, 2)
 
     if speed < 0.01:
@@ -183,4 +187,3 @@ def get_ffmpeg_options(speed: float = 1) -> dict[str, str]:
     }
 
     return ffmpeg_options
-
