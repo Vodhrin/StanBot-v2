@@ -21,14 +21,18 @@ class StanVoiceClient(disnake.VoiceClient):
         self._announce_channel: Optional[disnake.TextChannel] = None
         self._last_member: Optional[disnake.Member] = None
 
-    async def enqueue(self, url: str, inter: disnake.ApplicationCommandInteraction) -> None:
+    async def enqueue(self, urls: list[str], inter: disnake.ApplicationCommandInteraction) -> None:
 
         self._announce_channel = inter.channel
         self._last_member = inter.author
 
         await inter.response.defer()
 
-        infos = await extract_media_info(url, MediaType.Audio)
+        infos: list[MediaInfo] = []
+
+        for url in urls:
+            new_infos = await extract_media_info(url, MediaType.Audio)
+            infos.extend(new_infos)
 
         for info in infos:
             new_song = Song(info, inter.author)

@@ -27,9 +27,55 @@ class Radio(commands.Cog):
         vc = await voice.helpers.ensure_in_channel(self.bot, channel)
 
         try:
-            await vc.enqueue(url, inter)
+            await vc.enqueue([url], inter)
         except Exception as e:
             await inter.send("I farded.", delete_after=10)
+            await utils.relay_error(self.bot, e, await inter.original_message())
+
+    @commands.message_command(
+        name="Play File(s)",
+        description="Command Stan to play audio from embeds or files in the selected message.",
+        dm_permission=False
+    )
+    async def play_selected(self,
+                            inter: disnake.ApplicationCommandInteraction
+                            ) -> None:
+
+        if not inter.target:
+            await inter.send("I can't play that, retard.", ephemeral=True)
+            return
+
+        channel = voice.helpers.try_get_voice_channel(inter.author)
+        if channel is None:
+            await inter.send("Where, retard?", ephemeral=True)
+            return
+
+        message: disnake.Message = inter.target
+
+        urls = []
+
+        for attachment in message.attachments:
+            if "video" in attachment.content_type or "audio" in attachment.content_type:
+                urls.append(attachment.url)
+        for embed in message.embeds:
+            if embed.video is not None:
+                urls.append(embed.video.url)
+
+        if len(urls) < 1:
+            await inter.send("I can't play that, retard.", ephemeral=True)
+            return
+
+        channel = voice.helpers.try_get_voice_channel(inter.author)
+        if channel is None:
+            await inter.send("Where, retard?", ephemeral=True)
+            return
+
+        vc = await voice.helpers.ensure_in_channel(self.bot, channel)
+
+        try:
+            await vc.enqueue(urls, inter)
+        except Exception as e:
+            await inter.send("I farded.", ephemeral=True)
             await utils.relay_error(self.bot, e, await inter.original_message())
 
     @commands.slash_command(
