@@ -4,10 +4,10 @@ from datetime import datetime
 from queue import Queue
 from typing import Optional
 
+import utils
 from voice.song import Song
 from voice.ytdl import extract_media_info, get_ffmpeg_options
 from voice.media_info import MediaInfo, MediaType
-
 
 class StanVoiceClient(disnake.VoiceClient):
 
@@ -95,9 +95,9 @@ class StanVoiceClient(disnake.VoiceClient):
             if current.media_info.thumbnail is not None:
                 embed.set_thumbnail(current.media_info.thumbnail)
 
-        songs_field = f":arrow_forward: {current.name[:30] + '...' if len(current.name) > 30 else current.name}\n" \
+        songs_field = f":arrow_forward: {utils.trim(current.name, 25)}\n" \
             if current else ""
-        requesters_field = f"{current.owner.nick or current.owner.name}\n" \
+        requesters_field = f"{utils.trim(current.owner.nick or current.owner.name, 9)}\n" \
             if current else ""
         links_field = f"[{current.media_info.extractor}]({current.media_info.page_url})\n" \
             if current else ""
@@ -108,8 +108,8 @@ class StanVoiceClient(disnake.VoiceClient):
             for idx, i in enumerate(l):
                 if count == 25:
                     break
-                songs_field += f"{idx + 1}. {i.name[:30] + '...' if len(i.name) > 30 else i.name}\n"
-                requesters_field += f"{i.owner.nick or i.owner.name}\n"
+                songs_field += f"{idx + 1}. {utils.trim(i.name, 25)}\n"
+                requesters_field += f"{utils.trim(i.owner.nick or i.owner.name, 9)}\n"
                 links_field += f"[{i.media_info.extractor}]({i.media_info.page_url})\n"
 
                 count += 1
