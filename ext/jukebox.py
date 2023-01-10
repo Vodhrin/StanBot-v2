@@ -26,10 +26,9 @@ class Radio(commands.Cog):
 
         await inter.response.defer()
         vc = await voice.helpers.ensure_in_channel(self.bot, channel)
-        message = await inter.original_message()
 
         try:
-            await vc.enqueue(url, message.author, message.channel)
+            await vc.enqueue(url, inter.author, inter.channel())
             await inter.delete_original_message()
         except Exception as e:
             await inter.send("I farded.", ephemeral=True)
@@ -70,11 +69,10 @@ class Radio(commands.Cog):
 
         await inter.response.defer()
         vc = await voice.helpers.ensure_in_channel(self.bot, channel)
-        message = await inter.original_message()
 
         for url in urls:
             try:
-                await vc.enqueue(url, message.author, message.channel)
+                await vc.enqueue(url, inter.author, inter.channel())
             except Exception as e:
                 await inter.send("I farded.", ephemeral=True)
                 await utils.relay_error(self.bot, e, await inter.original_message())
