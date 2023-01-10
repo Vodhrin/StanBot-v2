@@ -9,7 +9,7 @@ class StanBot(commands.Bot):
             self,
             command_prefix=config.PREFIX,
             intents=config.INTENTS,
-            sync_commands_debug=True
+            sync_commands_debug=True,
             ):
 
         super().__init__(command_prefix=command_prefix, intents=intents, sync_commands_debug=sync_commands_debug)

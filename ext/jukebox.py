@@ -21,15 +21,18 @@ class Radio(commands.Cog):
 
         channel = voice.helpers.try_get_voice_channel(inter.author)
         if channel is None:
-            await inter.send("Where, retard?", delete_after=10)
+            await inter.send("Where, retard?", ephemeral=True)
             return
 
+        await inter.response.defer()
         vc = await voice.helpers.ensure_in_channel(self.bot, channel)
+        message = await inter.original_message()
 
         try:
-            await vc.enqueue([url], inter)
+            await vc.enqueue(url, message.author, message.channel)
+            await inter.delete_original_message()
         except Exception as e:
-            await inter.send("I farded.", delete_after=10)
+            await inter.send("I farded.", ephemeral=True)
             await utils.relay_error(self.bot, e, await inter.original_message())
 
     @commands.message_command(
@@ -43,11 +46,6 @@ class Radio(commands.Cog):
 
         if not inter.target:
             await inter.send("I can't play that, retard.", ephemeral=True)
-            return
-
-        channel = voice.helpers.try_get_voice_channel(inter.author)
-        if channel is None:
-            await inter.send("Where, retard?", ephemeral=True)
             return
 
         message: disnake.Message = inter.target
@@ -70,13 +68,18 @@ class Radio(commands.Cog):
             await inter.send("Where, retard?", ephemeral=True)
             return
 
+        await inter.response.defer()
         vc = await voice.helpers.ensure_in_channel(self.bot, channel)
+        message = await inter.original_message()
 
-        try:
-            await vc.enqueue(urls, inter)
-        except Exception as e:
-            await inter.send("I farded.", ephemeral=True)
-            await utils.relay_error(self.bot, e, await inter.original_message())
+        for url in urls:
+            try:
+                await vc.enqueue(url, message.author, message.channel)
+            except Exception as e:
+                await inter.send("I farded.", ephemeral=True)
+                await utils.relay_error(self.bot, e, await inter.original_message())
+            finally:
+                await inter.delete_original_message()
 
     @commands.slash_command(
         description="Command Stan to skip the current item in queue.",
@@ -91,14 +94,14 @@ class Radio(commands.Cog):
 
         channel = voice.helpers.try_get_voice_channel(inter.guild.me)
         if channel is None:
-            await inter.send("Retard", delete_after=10)
+            await inter.send("Retard", ephemeral=True)
             return
 
         vc = voice.helpers.try_get_voice_client(self.bot, channel)
         if vc:
             await vc.skip(inter, no_loop)
         else:
-            await inter.send("Retard.", delete_after=10)
+            await inter.send("Retard.", ephemeral=True)
 
     @commands.slash_command(
         description="Forces Stan to disconnect from the voice channel in this guild.",
@@ -110,7 +113,7 @@ class Radio(commands.Cog):
 
         channel = voice.helpers.try_get_voice_channel(inter.author)
         if channel is None:
-            await inter.send("Retard.", delete_after=10)
+            await inter.send("Retard.", ephemeral=True)
             return
 
         vc = voice.helpers.try_get_voice_client(self.bot, channel)
@@ -120,7 +123,7 @@ class Radio(commands.Cog):
             await vc.disconnect()
             await inter.send(f"Banished from {channel.name}.", delete_after=10)
         else:
-            await inter.send("Retard.", delete_after=10)
+            await inter.send("Retard.", ephemeral=True)
 
     @commands.slash_command(
         description="Command Stan to toggle looping queue mode.",
@@ -132,14 +135,14 @@ class Radio(commands.Cog):
 
         channel = voice.helpers.try_get_voice_channel(inter.guild.me)
         if channel is None:
-            await inter.send("Retard", delete_after=10)
+            await inter.send("Retard", ephemeral=True)
             return
 
         vc = voice.helpers.try_get_voice_client(self.bot, channel)
         if vc:
             await vc.toggle_looping(inter)
         else:
-            await inter.send("Retard.", delete_after=10)
+            await inter.send("Retard.", ephemeral=True)
 
 
 def setup(bot: StanBot) -> None:

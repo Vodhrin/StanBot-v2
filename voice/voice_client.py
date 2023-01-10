@@ -19,31 +19,21 @@ class StanVoiceClient(disnake.VoiceClient):
         self._looping: bool = False
         self._embed_message: Optional[disnake.Message] = None
         self._announce_channel: Optional[disnake.TextChannel] = None
-        self._last_member: Optional[disnake.Member] = None
 
-    async def enqueue(self, urls: list[str], inter: disnake.ApplicationCommandInteraction) -> None:
+    async def enqueue(self, url: str, requestor: disnake.Member, text_channel: disnake.TextChannel) -> None:
 
-        self._announce_channel = inter.channel
-        self._last_member = inter.author
+        self._announce_channel = text_channel
 
-        await inter.response.defer()
-
-        infos: list[MediaInfo] = []
-
-        for url in urls:
-            new_infos = await extract_media_info(url, MediaType.Audio)
-            infos.extend(new_infos)
+        infos: list[MediaInfo] = await extract_media_info(url, MediaType.Audio)
 
         for info in infos:
-            new_song = Song(info, inter.author)
+            new_song = Song(info, requestor)
             self._queue.put(new_song)
 
         if not self.is_playing():
             await self.play_next()
         else:
             await self.update_embed()
-
-        await inter.delete_original_message()
 
     async def play_next(self) -> None:
 
@@ -95,14 +85,15 @@ class StanVoiceClient(disnake.VoiceClient):
             timestamp=datetime.now()
         )
 
-        if self._last_member is not None:
-            embed.set_author(name=self._last_member.nick or self._last_member.name,
-                             icon_url=self._last_member.avatar.url)
-
         current = self._current_song
 
-        if current is not None and current.media_info.thumbnail is not None:
-            embed.set_thumbnail(current.media_info.thumbnail)
+        if current is not None:
+            avatar = current.owner.guild_avatar or current.owner.avatar
+            embed.set_author(name=current.owner.nick or current.owner.name,
+                             icon_url=avatar.url)
+
+            if current.media_info.thumbnail is not None:
+                embed.set_thumbnail(current.media_info.thumbnail)
 
         songs_field = f":arrow_forward: {current.name[:30] + '...' if len(current.name) > 30 else current.name}\n" \
             if current else ""

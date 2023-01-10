@@ -18,10 +18,10 @@ class Base(commands.Cog):
                       ):
 
         if not utils.is_admin(inter.author):
-            await inter.send("Ballsack denied.", delete_after=10)
+            await inter.send("Ballsack denied.", ephemeral=True)
             return
 
-        await inter.send("Restarting...", delete_after=10)
+        await inter.send("Restarting...", ephemeral=True)
         exit()
 
     @commands.slash_command(
@@ -45,7 +45,7 @@ class Base(commands.Cog):
                 for i in it:
                     await inter.channel.send(i)
         except Exception as e:
-            await inter.send("I farded.", delete_after=10)
+            await inter.send("I farded.", ephemeral=True)
             await utils.relay_error(self.bot, e, await inter.original_message())
 
     @commands.message_command(
@@ -56,7 +56,7 @@ class Base(commands.Cog):
     async def sussify_selected(self, inter: disnake.ApplicationCommandInteraction):
 
         if not inter.target or len(inter.target.content) < 1:
-            await inter.send("I can't sussify that, retard.", delete_after=10)
+            await inter.send("I can't sussify that, retard.", ephemeral=True)
             return
 
         await self.sussify(inter, inter.target.content)
@@ -76,7 +76,7 @@ class Base(commands.Cog):
             await self.bot.change_presence(activity=activity)
             await inter.send(f"Activity set to '{activity_name}'.")
         except Exception as e:
-            await inter.send("I farded", delete_after=10)
+            await inter.send("I farded", ephemeral=True)
             await utils.relay_error(self.bot, e, await inter.original_message())
 
 
